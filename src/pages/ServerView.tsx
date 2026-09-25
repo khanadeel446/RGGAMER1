@@ -24,8 +24,11 @@ import WorldManager from "../components/WorldManager";
 import ResourcePackManager from "../components/ResourcePackManager";
 import AddonsManager from "../components/AddonsManager";
 import SoftwareManager from "../components/SoftwareManager";
+import ServerStartup from "../components/ServerStartup";
+import ServerSchedules from "../components/ServerSchedules";
+import ServerActivityLogs from "../components/ServerActivityLogs";
 import { PlayitFirstStartModal } from "../components/PlayitFirstStartModal";
-import { Map, Palette } from "lucide-react";
+import { Map, Palette, Clock, Activity, FileText, Calendar } from "lucide-react";
 import { Puzzle, Box, Network, Cpu, Layers as LayersIcon } from "lucide-react";
 import { Settings } from "lucide-react";
 import { useSettings } from "../context/SettingsContext";
@@ -244,29 +247,19 @@ export default function ServerView() {
   } else {
     tabs = [
       { name: "Terminal", path: `/servers/${id}`, exactPath: "", icon: <Terminal size={18} /> },
+      { name: "Files", path: `/servers/${id}/files`, exactPath: "files", icon: <Folder size={18} /> },
+      { name: "Worlds", path: `/servers/${id}/world`, exactPath: "world", icon: <Map size={18} /> },
+      { name: "Backups", path: `/servers/${id}/backup`, exactPath: "backup", icon: <Archive size={18} /> },
+      { name: "Plugins", path: `/servers/${id}/plugins`, exactPath: "plugins", icon: <Puzzle size={18} /> },
+      { name: "Mods", path: `/servers/${id}/mods`, exactPath: "mods", icon: <Box size={18} /> },
+      { name: "Resource Packs", path: `/servers/${id}/resourcepacks`, exactPath: "resourcepacks", icon: <Palette size={18} /> },
+      { name: "Properties", path: `/servers/${id}/properties`, exactPath: "properties", icon: <Sliders size={18} /> },
+      { name: "Startup", path: `/servers/${id}/startup`, exactPath: "startup", icon: <Cpu size={18} /> },
       { name: "Players", path: `/servers/${id}/players`, exactPath: "players", icon: <Users size={18} /> },
-      { name: "File Manager", path: `/servers/${id}/files`, exactPath: "files", icon: <Folder size={18} /> },
-    ];
-
-    if (!isProxy) {
-      tabs.splice(1, 0, { name: "Properties", path: `/servers/${id}/properties`, exactPath: "properties", icon: <Sliders size={18} /> });
-      tabs.splice(2, 0, { name: "World", path: `/servers/${id}/world`, exactPath: "world", icon: <Map size={18} /> });
-      tabs.splice(3, 0, { name: "Add-ons", path: `/servers/${id}/addons`, exactPath: "addons", icon: <Box size={18} /> });
-    }
-
-    if (["PAPER", "SPIGOT", "PURPUR", "BUNGEECORD", "VELOCITY", "WATERFALL"].includes(serverTypeUpper)) {
-      tabs.push({ name: "Plugins", path: `/servers/${id}/plugins`, exactPath: "plugins", icon: <Puzzle size={18} /> });
-    }
-
-    if (["FORGE", "FABRIC", "NEOFORGE", "QUILT"].includes(serverTypeUpper)) {
-      tabs.push({ name: "Mods", path: `/servers/${id}/mods`, exactPath: "mods", icon: <Box size={18} /> });
-    }
-
-    tabs.push(
+      { name: "Schedules", path: `/servers/${id}/schedules`, exactPath: "schedules", icon: <Clock size={18} /> },
       { name: "Settings", path: `/servers/${id}/settings`, exactPath: "settings", icon: <Settings size={18} /> },
-      { name: "Software", path: `/servers/${id}/software`, exactPath: "software", icon: <LayersIcon size={18} /> },
-      { name: "Backup", path: `/servers/${id}/backup`, exactPath: "backup", icon: <Archive size={18} /> }
-    );
+      { name: "Activity", path: `/servers/${id}/activity`, exactPath: "activity", icon: <Activity size={18} /> },
+    ];
 
     if (enablePlayit) {
       tabs.push(
@@ -678,6 +671,9 @@ export default function ServerView() {
               <Route path="/sftp" element={<ServerSFTP serverId={id!} server={server} />} />
               <Route path="/subusers" element={<SubUsersManager serverId={id!} />} />
               <Route path="/settings" element={<ServerSettings serverId={id!} server={server} />} />
+              <Route path="/startup" element={<ServerStartup server={server} onUpdate={fetchServer} />} />
+              <Route path="/schedules" element={<ServerSchedules server={server} />} />
+              <Route path="/activity" element={<ServerActivityLogs server={server} />} />
               <Route path="/software" element={<SoftwareManager serverId={id!} server={server} onServerUpdated={fetchServer} />} />
               <Route path="/backup" element={<ServerBackups serverId={id!} />} />
               <Route path="/addons" element={<AddonsManager serverId={id!} initialCategory="all" />} />

@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (request.auth.token.role == 'admin' ||
+         request.auth.token.role == 'owner' ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'owner']));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'email', 'username', 'role', 'plan']) &&
+             data.id is string &&
+             data.email is string &&
+             data.username is string &&
+             data.role in ['user', 'admin', 'owner'] &&
+             data.plan in ['free', 'premium'];
+    }
+
+    function isValidServer(data) {
+      return data.keys().hasAll(['id', 'ownerId', 'name', 'status', 'software', 'version', 'ram', 'cpu', 'disk', 'port']) &&
+             data.id is string &&
+             data.ownerId is string &&
+             data.name is string &&
+             data.name.size() > 0 &&
+             data.ram is number &&
+             data.ram > 0 &&
+             data.disk is number &&
+             data.port is number;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isUser(userId) || isAdmin());
+      allow create: if isAuthenticated() && isUser(userId) && isValidUser(request.resource.data) &&
+                      (request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && (
+                      (isUser(userId) && isValidUser(request.resource.data) && 
+                       request.resource.data.role == resource.data.role) ||
+                      isAdmin()
+                    );
+      allow delete: if isAdmin();
+    }
+
+    // Plans collection
+    match /plans/{planId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Servers collection
+    match /servers/{serverId} {
+      allow read: if isAuthenticated() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && (request.resource.data.ownerId == request.auth.uid || isAdmin()) &&
+                      isValidServer(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.ownerId == request.auth.uid || isAdmin()) &&
+                      isValidServer(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.ownerId == request.auth.uid || isAdmin());
+
+      // Backups subcollection
+      match /backups/{backupId} {
+        allow read: if isAuthenticated() && 
+          (get(/databases/$(database)/documents/servers/$(serverId)).data.ownerId == request.auth.uid || isAdmin());
+        allow write: if isAuthenticated() && 
+          (get(/databases/$(database)/documents/servers/$(serverId)).data.ownerId == request.auth.uid || isAdmin());
+      }
+
+      // Activity logs subcollection
+      match /activityLogs/{logId} {
+        allow read: if isAuthenticated() && 
+          (get(/databases/$(database)/documents/servers/$(serverId)).data.ownerId == request.auth.uid || isAdmin());
+        allow create: if isAuthenticated() && 
+          (get(/databases/$(database)/documents/servers/$(serverId)).data.ownerId == request.auth.uid || isAdmin());
+        allow update, delete: if isAdmin();
+      }
+
+      // Tunnels subcollection
+      match /tunnels/{tunnelId} {
+        allow read: if isAuthenticated() && 
+          (get(/databases/$(database)/documents/servers/$(serverId)).data.ownerId == request.auth.uid || isAdmin());
+        allow write: if isAuthenticated() && 
+          (get(/databases/$(database)/documents/servers/$(serverId)).data.ownerId == request.auth.uid || isAdmin());
+      }
+    }
+
+    // Nodes collection
+    match /nodes/{nodeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // API Keys collection
+    match /apiKeys/{keyId} {
+      allow read: if isAuthenticated() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && (resource.data.ownerId == request.auth.uid || isAdmin());
+    }
+
+    // Settings collection
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

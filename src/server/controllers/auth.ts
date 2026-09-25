@@ -50,15 +50,24 @@ export const register = async (req: Request, res: Response) => {
     username: cleanUsername,
     password: hashedPassword,
     role: "user",
-    passwordVersion: 0
+    plan: req.body.plan || null,
+    passwordVersion: 0,
+    createdAt: new Date().toISOString()
   };
 
   users.push(newUser);
   await writeJSON("users.json", users);
 
+  const token = jwt.sign(
+    { id: newUser.id, username: newUser.username, role: newUser.role, passwordVersion: 0 },
+    getJwtSecret(),
+    { expiresIn: "7d" }
+  );
+
   res.status(201).json({
     message: "User registered successfully",
-    user: { id: newUser.id, username: newUser.username, role: newUser.role }
+    token,
+    user: { id: newUser.id, username: newUser.username, role: newUser.role, plan: newUser.plan }
   });
 };
 
@@ -126,9 +135,10 @@ export const login = async (req: Request, res: Response) => {
   }
 
   const role = user.role || "admin";
+  const plan = user.plan || (role === "admin" || role === "owner" ? "premium" : null);
   const token = jwt.sign({ id: user.id, username: user.username, role, passwordVersion: user.passwordVersion || 0 }, getJwtSecret(), { expiresIn: "7d" });
 
-  res.json({ token, user: { id: user.id, username: user.username, role } });
+  res.json({ token, user: { id: user.id, username: user.username, role, plan } });
 };
 
 export const logout = (req: Request, res: Response) => {
@@ -141,9 +151,12 @@ export const getMe = async (req: Request, res: Response) => {
     const users = await readJSON("users.json") || [];
     const dbUser = users.find((u: any) => u.id === reqUser.id);
     if (dbUser) {
+      const plan = dbUser.plan || (dbUser.role === "admin" || dbUser.role === "owner" ? "premium" : null);
       return res.json({
         user: {
           ...reqUser,
+          plan,
+          planSelectedAt: dbUser.planSelectedAt || null,
           googleId: dbUser.googleId || null,
           isGoogleUser: !!(dbUser.googleId || !dbUser.password)
         }
@@ -151,6 +164,38 @@ export const getMe = async (req: Request, res: Response) => {
     }
   }
   res.json({ user: reqUser });
+};
+
+export const updatePlan = async (req: Request, res: Response) => {
+  const reqUser = (req as any).user;
+  const { plan } = req.body;
+
+  if (!plan || !["free", "premium"].includes(plan)) {
+    return res.status(400).json({ error: "Invalid plan. Must be 'free' or 'premium'." });
+  }
+
+  const users = await readJSON("users.json") || [];
+  const userIndex = users.findIndex((u: any) => u.id === reqUser.id);
+
+  if (userIndex === -1) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  const now = new Date().toISOString();
+  users[userIndex].plan = plan;
+  users[userIndex].planSelectedAt = now;
+  await writeJSON("users.json", users);
+
+  res.json({
+    success: true,
+    plan,
+    planSelectedAt: now,
+    user: {
+      ...reqUser,
+      plan,
+      planSelectedAt: now
+    }
+  });
 };
 
 export const getUsers = async (req: Request, res: Response) => {

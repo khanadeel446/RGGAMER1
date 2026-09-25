@@ -7,10 +7,12 @@ import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import PageHeader from "../components/PageHeader";
 import { motion } from "framer-motion";
-import { Shield, User, Trash2, Layout, Upload, RefreshCw, Key, CheckCircle2, AlertCircle, Globe, Sparkles, ExternalLink, Cpu, Image, Settings, Crown } from "lucide-react";
+import { Shield, User, Trash2, Layout, Upload, RefreshCw, Key, CheckCircle2, AlertCircle, Globe, Sparkles, ExternalLink, Cpu, Image, Settings, Crown, Zap, Check } from "lucide-react";
 import { ImageCropper } from "../components/ImageCropper";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import { initializeApp, deleteApp, getApps } from "firebase/app";
+import { PlanSelectionModal } from "../components/PlanSelectionModal";
+import { DEFAULT_PLANS } from "../firebase/config";
 
 
 
@@ -25,6 +27,7 @@ export default function AccountPage(): React.ReactElement {
     fetchSettings 
   } = useSettings();
   
+  const [showPlanModal, setShowPlanModal] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -496,6 +499,37 @@ export default function AccountPage(): React.ReactElement {
                 )}
               </p>
             </div>
+
+            {/* Current Hosting Plan */}
+            <div className="md:col-span-2 bg-gradient-to-r from-theme-500/10 via-theme-500/5 to-transparent border border-theme-500/30 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Zap className="text-theme-400 w-5 h-5" />
+                  <span className="text-xs font-mono uppercase text-theme-400 font-bold tracking-wider">Active Subscription</span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono uppercase font-bold ${
+                    (user.plan === 'premium' || user.role === 'admin' || user.role === 'owner')
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                      : 'bg-slate-700/60 text-slate-300 border border-slate-600'
+                  }`}>
+                    {user.plan === 'premium' || user.role === 'admin' || user.role === 'owner' ? 'Premium Pro Tier' : 'Free Community Tier'}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {user.plan === 'premium' || user.role === 'admin' || user.role === 'owner'
+                    ? 'Up to 10 servers • 16GB DDR5 RAM • 60GB NVMe • Dedicated CPU allocation'
+                    : '1 server deployment • 2GB RAM • 10GB NVMe • Community Support'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowPlanModal(true)}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-theme-600 hover:bg-theme-500 text-white font-semibold text-xs transition-all shadow-md shadow-theme-600/20 cursor-pointer shrink-0"
+              >
+                <Sparkles size={14} />
+                Change / Upgrade Plan
+              </button>
+            </div>
           </div>
 
           {(user.isGoogleUser || user.googleId) && (
@@ -590,6 +624,13 @@ export default function AccountPage(): React.ReactElement {
         
         </section>
       </div>
+
+      <PlanSelectionModal
+        isOpen={showPlanModal}
+        onClose={() => setShowPlanModal(false)}
+        title="Change Subscription Plan"
+        subtitle="Select a plan below to immediately update your resource allowances and feature set."
+      />
 
       {isChangingUsername && <LoadingOverlay message="Updating Username..." subMessage="Synchronizing user identity across records..." />}
       {isChangingPassword && <LoadingOverlay message="Updating Password..." subMessage="Hashing credentials with bcrypt and securing session..." />}

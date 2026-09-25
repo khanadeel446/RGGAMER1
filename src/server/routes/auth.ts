@@ -1,5 +1,5 @@
 import express from "express";
-import { login, logout, getMe, getUsers, changePassword, changeUsername, register, googleLogin } from "../controllers/auth.js";
+import { login, logout, getMe, getUsers, changePassword, changeUsername, register, googleLogin, updatePlan } from "../controllers/auth.js";
 import { requireAuth } from "../middleware/auth.js";
 import { loginRateLimiter, registerRateLimiter } from "../middleware/rateLimiters.js";
 
@@ -13,5 +13,6 @@ router.get("/me", requireAuth, getMe);
 router.get("/users", requireAuth, getUsers);
 router.put("/password", requireAuth, changePassword);
 router.put("/username", requireAuth, changeUsername);
+router.put("/plan", requireAuth, updatePlan);
 
 export default router;

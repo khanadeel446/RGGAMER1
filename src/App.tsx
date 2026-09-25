@@ -8,6 +8,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "r
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import ServerList from "./pages/ServerList";
 import CreateServer from "./pages/CreateServer";
@@ -26,6 +27,7 @@ import { GlobalBackground } from "./components/GlobalBackground";
 import { SystemUpdateListener } from "./components/SystemUpdateListener";
 import { TutorialOverlay } from "./components/TutorialOverlay";
 import { GlitchSecurityLock } from "./components/GlitchSecurityLock";
+import { PlanSelectionModal } from "./components/PlanSelectionModal";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -40,6 +42,21 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   );
   if (!user) return <Navigate to="/login" />;
   return <Layout>{children}</Layout>;
+};
+
+const HomeRoute = () => {
+  const { user, loading } = useAuth();
+  if (loading) return (
+    <div className="h-[100dvh] w-full flex items-center justify-center bg-transparent text-foreground">
+      <motion.div
+        animate={{ scale: [1, 1.2, 1], rotate: [0, 180, 360] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        className="w-16 h-16 border-4 border-theme-600 border-t-transparent rounded-full"
+      />
+    </div>
+  );
+  if (!user) return <LandingPage />;
+  return <ProtectedRoute><Dashboard /></ProtectedRoute>;
 };
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
@@ -64,12 +81,15 @@ const AnimatedRoutes = () => {
         className="h-full w-full flex flex-col"
       >
         <Routes location={location}>
+          <Route path="/" element={<HomeRoute />} />
+          <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/nodes" element={<AdminRoute><Nodes /></AdminRoute>} />
+          <Route path="/fleet" element={<AdminRoute><AdminServers /></AdminRoute>} />
           <Route path="/servers" element={<ProtectedRoute><ServerList /></ProtectedRoute>} />
-          <Route path="/servers/create" element={<AdminRoute><CreateServer /></AdminRoute>} />
+          <Route path="/servers/create" element={<ProtectedRoute><CreateServer /></ProtectedRoute>} />
           <Route path="/servers/:id/*" element={<ProtectedRoute><ServerView /></ProtectedRoute>} />
           <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<AdminRoute><AdminSettingsPage /></AdminRoute>} />
@@ -78,6 +98,27 @@ const AnimatedRoutes = () => {
         </Routes>
       </motion.div>
     </AnimatePresence>
+  );
+};
+
+const FirstLoginPlanManager = () => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading || !user) return null;
+  if (location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/landing") return null;
+
+  // If user has not selected a plan (and is not an admin/owner)
+  const needsPlanSelection = !user.plan && user.role !== "admin" && user.role !== "owner";
+
+  if (!needsPlanSelection) return null;
+
+  return (
+    <PlanSelectionModal 
+      isOpen={true} 
+      title="Welcome to Your Minecraft Cloud!"
+      subtitle="Select a hosting tier to complete your account setup and provision your resources."
+    />
   );
 };
 
@@ -137,6 +178,7 @@ export default function App() {
         <GlobalBackground />
         <Router>
           <AnimatedRoutes />
+          <FirstLoginPlanManager />
           <TutorialManager />
         </Router>
         </UploadProvider>

@@ -1,0 +1,188 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role, subscription plan, and credentials metadata",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique user ID matching auth UID" },
+        "email": { "type": "string", "format": "email", "description": "User email address" },
+        "username": { "type": "string", "description": "Display username" },
+        "role": { "type": "string", "enum": ["user", "admin", "owner"], "description": "Role for access control" },
+        "plan": { "type": "string", "enum": ["free", "premium"], "description": "Subscription tier" },
+        "avatarUrl": { "type": "string", "description": "Optional avatar URL" },
+        "planSelectedAt": { "type": "string", "description": "ISO timestamp when tier was selected" },
+        "createdAt": { "type": "string", "description": "ISO creation timestamp" }
+      },
+      "required": ["id", "email", "username", "role", "plan"]
+    },
+    "Plan": {
+      "title": "Plan",
+      "description": "Configurable plan specifications for Free and Premium tiers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Plan key: free or premium" },
+        "name": { "type": "string", "description": "Plan display name" },
+        "ramLimitMB": { "type": "number", "description": "Maximum RAM in MB" },
+        "diskLimitGB": { "type": "number", "description": "Maximum Disk in GB" },
+        "maxServers": { "type": "number", "description": "Allowed number of server deployments" },
+        "cpuAllocationPercent": { "type": "number", "description": "CPU allowance percent" },
+        "prioritySupport": { "type": "boolean", "description": "Includes 24/7 priority support" },
+        "customDomains": { "type": "boolean", "description": "Supports custom domain mapping" }
+      },
+      "required": ["id", "name", "ramLimitMB", "diskLimitGB", "maxServers"]
+    },
+    "Server": {
+      "title": "Server",
+      "description": "Minecraft server deployment details and configuration",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique server ID" },
+        "ownerId": { "type": "string", "description": "UID of server owner" },
+        "name": { "type": "string", "description": "Server display name" },
+        "status": { "type": "string", "enum": ["online", "offline", "starting", "stopping", "suspended"], "description": "Current lifecycle status" },
+        "software": { "type": "string", "enum": ["vanilla", "paper", "purpur", "spigot", "fabric", "forge", "folia", "velocity", "bungeecord", "nodejs", "python"], "description": "Minecraft or application software" },
+        "version": { "type": "string", "description": "Minecraft software version" },
+        "javaVersion": { "type": "string", "description": "Java runtime version (e.g., 21, 17, 11, 8)" },
+        "ram": { "type": "number", "description": "Allocated RAM in GB" },
+        "cpu": { "type": "number", "description": "Allocated CPU percentage" },
+        "disk": { "type": "number", "description": "Allocated disk in GB" },
+        "port": { "type": "number", "description": "Server listening port" },
+        "node": { "type": "string", "description": "Assigned infrastructure node ID" },
+        "ipAlias": { "type": "string", "description": "Public domain or alias" },
+        "createdAt": { "type": "string", "description": "ISO timestamp when deployed" }
+      },
+      "required": ["id", "ownerId", "name", "status", "software", "version", "ram", "cpu", "disk", "port"]
+    },
+    "Node": {
+      "title": "Node",
+      "description": "Host daemon node in the fleet infrastructure",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique node ID" },
+        "name": { "type": "string", "description": "Node display name" },
+        "host": { "type": "string", "description": "IP or Hostname" },
+        "apiPort": { "type": "number", "description": "Daemon communication port" },
+        "memory": { "type": "number", "description": "Total RAM capacity in MB" },
+        "disk": { "type": "number", "description": "Total Disk capacity in MB" },
+        "cpuCores": { "type": "number", "description": "Number of CPU threads/cores" },
+        "location": { "type": "string", "description": "Geographical region or datacenter" },
+        "status": { "type": "string", "enum": ["online", "offline", "maintenance"], "description": "Health status" }
+      },
+      "required": ["id", "name", "host", "apiPort", "memory", "disk", "status"]
+    },
+    "Backup": {
+      "title": "Backup",
+      "description": "Archive backup for a server",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Backup ID" },
+        "serverId": { "type": "string", "description": "Server ID the backup belongs to" },
+        "ownerId": { "type": "string", "description": "Owner UID" },
+        "name": { "type": "string", "description": "Backup filename or label" },
+        "sizeMB": { "type": "number", "description": "Archive size in MB" },
+        "createdAt": { "type": "string", "description": "ISO creation timestamp" },
+        "status": { "type": "string", "enum": ["completed", "in_progress", "failed"], "description": "Status" }
+      },
+      "required": ["id", "serverId", "ownerId", "name", "createdAt"]
+    },
+    "ApiKey": {
+      "title": "ApiKey",
+      "description": "Programmatic API token for panel operations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique token identifier" },
+        "ownerId": { "type": "string", "description": "User UID who created the key" },
+        "name": { "type": "string", "description": "Key description or name" },
+        "preview": { "type": "string", "description": "Masked preview (e.g. jtg_...)" },
+        "permissions": { "type": "string", "description": "Permissions bitmask or comma-separated scope" },
+        "createdAt": { "type": "string", "description": "ISO creation timestamp" },
+        "lastUsedAt": { "type": "string", "description": "ISO last access timestamp" }
+      },
+      "required": ["id", "ownerId", "name", "preview", "createdAt"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "Audit trail log for actions performed on servers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Log record ID" },
+        "serverId": { "type": "string", "description": "Associated server ID" },
+        "userId": { "type": "string", "description": "Actor user UID" },
+        "username": { "type": "string", "description": "Actor display username" },
+        "action": { "type": "string", "description": "Action performed (e.g. START, STOP, FILE_EDIT)" },
+        "details": { "type": "string", "description": "Detailed description or parameters" },
+        "timestamp": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "serverId", "action", "timestamp"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Global panel customization and branding configuration",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Setting document ID (e.g. global)" },
+        "siteName": { "type": "string", "description": "Panel branding name" },
+        "logoUrl": { "type": "string", "description": "Logo URL" },
+        "primaryColor": { "type": "string", "description": "Primary color hex or key" },
+        "secondaryColor": { "type": "string", "description": "Secondary accent color" },
+        "themeMode": { "type": "string", "enum": ["dark", "light", "navy", "crimson", "purple", "emerald", "amber"], "description": "Default theme mode" },
+        "customCss": { "type": "string", "description": "Custom CSS overrides" }
+      },
+      "required": ["id", "siteName"]
+    },
+    "Tunnel": {
+      "title": "Tunnel",
+      "description": "Playit tunnel mapping for a Minecraft server",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Tunnel ID" },
+        "serverId": { "type": "string", "description": "Associated Minecraft server ID" },
+        "ownerId": { "type": "string", "description": "Owner UID" },
+        "status": { "type": "string", "enum": ["running", "stopped", "creating"], "description": "Tunnel state" },
+        "publicAddress": { "type": "string", "description": "Public Minecraft host (e.g. xxx.gl.joinmc.link)" },
+        "port": { "type": "number", "description": "Public forwarded port" },
+        "createdAt": { "type": "string", "description": "ISO creation timestamp" }
+      },
+      "required": ["id", "serverId", "ownerId", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile with plan selection and role access"
+    },
+    "/plans/{planId}": {
+      "schema": "Plan",
+      "description": "Configurable limits for Free and Premium tiers"
+    },
+    "/servers/{serverId}": {
+      "schema": "Server",
+      "description": "Minecraft servers managed by users"
+    },
+    "/nodes/{nodeId}": {
+      "schema": "Node",
+      "description": "Infrastructure host nodes"
+    },
+    "/servers/{serverId}/backups/{backupId}": {
+      "schema": "Backup",
+      "description": "Backups associated with a server"
+    },
+    "/apiKeys/{keyId}": {
+      "schema": "ApiKey",
+      "description": "API keys issued to users"
+    },
+    "/servers/{serverId}/activityLogs/{logId}": {
+      "schema": "ActivityLog",
+      "description": "Activity audit log for server operations"
+    },
+    "/settings/{settingId}": {
+      "schema": "Setting",
+      "description": "Global panel settings and branding"
+    },
+    "/servers/{serverId}/tunnels/{tunnelId}": {
+      "schema": "Tunnel",
+      "description": "Playit tunnels configured for a server"
+    }
+  }
+}
